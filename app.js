@@ -32,8 +32,10 @@
   }
 
   function dateValue(id, label) {
-    const date = D.parseISODate($(id).value);
-    if (!date) throw new Error(`請選擇${label}`);
+    const raw = $(id).value.trim();
+    if (!raw) throw new Error(`請輸入${label}`);
+    const date = D.parseFlexibleDate(raw);
+    if (!date) throw new Error(`${label}日期格式不正確，可輸入 20260101、2026/01/01 或 115/01/01`);
     return date;
   }
 
@@ -210,26 +212,41 @@
   function updateMeetingDateRow(input, weekday, status, row, interval) {
     row.classList.remove('meeting-row-valid', 'meeting-row-invalid');
     status.className = 'meeting-status empty';
-    if (!input.value) {
+    input.removeAttribute('title');
+    if (!input.value.trim()) {
       weekday.textContent = '—';
       status.textContent = '尚未填寫';
       return;
     }
 
-    const meetingDate = D.parseISODate(input.value);
+    const meetingDate = D.parseFlexibleDate(input.value);
     if (!meetingDate) {
       weekday.textContent = '—';
       status.className = 'meeting-status invalid';
       status.textContent = '日期格式錯誤';
       row.classList.add('meeting-row-invalid');
+      input.title = '可輸入：20260101、2026/01/01、2026-01-01、2026.01.01、1150101、115/01/01、115-01-01、115.01.01';
       return;
     }
 
     weekday.textContent = D.formatWeekday(meetingDate);
+    input.title = `辨識日期：${D.formatDate(meetingDate)}（${D.formatROCDate(meetingDate)}）`;
     const isWithin = meetingDate >= interval.start && meetingDate <= interval.end;
     status.className = `meeting-status ${isWithin ? 'valid' : 'invalid'}`;
     status.textContent = isWithin ? '符合區間' : '超出區間';
     row.classList.add(isWithin ? 'meeting-row-valid' : 'meeting-row-invalid');
+  }
+
+  function createMeetingDateInput(label, value) {
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'meeting-date-input';
+    input.value = value || '';
+    input.placeholder = '例：20260101、115/01/01';
+    input.autocomplete = 'off';
+    input.spellcheck = false;
+    input.setAttribute('aria-label', label);
+    return input;
   }
 
   function createMeetingTermTable(term) {
@@ -271,13 +288,10 @@
       countCell.textContent = `第${index + 1}次`;
 
       const dateCell = document.createElement('td');
-      const input = document.createElement('input');
-      input.type = 'date';
-      input.className = 'meeting-date-input';
-      input.min = D.toISODate(interval.start);
-      input.max = D.toISODate(interval.end);
-      input.value = getMeetingDateDraft(term.key, index);
-      input.setAttribute('aria-label', `${term.scopeLabel}第${index + 1}次預計開會日期`);
+      const input = createMeetingDateInput(
+        `${term.scopeLabel}第${index + 1}次預計開會日期`,
+        getMeetingDateDraft(term.key, index)
+      );
       dateCell.appendChild(input);
 
       const weekdayCell = document.createElement('td');
@@ -296,7 +310,85 @@
       updateMeetingDateRow(input, weekdayCell, status, row, interval);
 
       const onDateChange = () => {
-        setMeetingDateDraft(term.key, index, input.value);
+        setMeetingDateDraft(term.key, index, input.value.trim());
+        updateMeetingDateRow(input, weekdayCell, status, row, interval);
+        refreshLaborMeetingCopy();
+      };
+      input.addEventListener('input', onDateChange);
+      input.addEventListener('change', onDateChange);
+      tbody.appendChild(row);
+    });
+
+    table.append(thead, tbody);
+    wrap.appendChild(table);
+    section.append(heading, wrap);
+    return section;
+  }
+
+  function createFilingMeetingTable(filing, terms) {
+    const section = document.createElement('section');
+    section.className = 'result-table-section meeting-term-section filing-meeting-section';
+
+    const heading = document.createElement('div');
+    heading.className = 'result-table-heading meeting-term-heading';
+    const titleWrap = document.createElement('div');
+    titleWrap.className = 'meeting-term-title-wrap';
+    const badge = document.createElement('span');
+    badge.className = 'term-scope-badge filing';
+    badge.textContent = '送件前一年';
+    const title = document.createElement('h3');
+    title.textContent = '預計送件日前一年勞資會議區間';
+    titleWrap.append(badge, title);
+    const note = document.createElement('span');
+    note.textContent = `${D.formatDate(filing.start)} ～ ${D.formatDate(filing.end)}｜共 ${filing.intervals.length} 次`;
+    heading.append(titleWrap, note);
+
+    const wrap = document.createElement('div');
+    wrap.className = 'table-scroll';
+    const table = document.createElement('table');
+    table.className = 'data-table meeting-data-table filing-meeting-table';
+    const thead = document.createElement('thead');
+    const headerRow = document.createElement('tr');
+    ['對應次數', '預計開會日期', '星期', '起日', '迄日', '區間確認'].forEach((header) => {
+      const th = document.createElement('th');
+      th.textContent = header;
+      headerRow.appendChild(th);
+    });
+    thead.appendChild(headerRow);
+
+    const tbody = document.createElement('tbody');
+    filing.intervals.forEach((interval, index) => {
+      const row = document.createElement('tr');
+      const matchedLabel = findMeetingIntervalLabel(terms, interval.start) || `區間${index + 1}`;
+      filing.labels[index] = matchedLabel;
+
+      const countCell = document.createElement('td');
+      countCell.className = 'meeting-count-cell';
+      countCell.textContent = matchedLabel;
+
+      const dateCell = document.createElement('td');
+      const input = createMeetingDateInput(
+        `送件日前一年${matchedLabel}預計開會日期`,
+        getMeetingDateDraft(filing.key, index)
+      );
+      dateCell.appendChild(input);
+
+      const weekdayCell = document.createElement('td');
+      weekdayCell.className = 'meeting-weekday-cell';
+      const startCell = document.createElement('td');
+      startCell.textContent = D.formatDate(interval.start);
+      const endCell = document.createElement('td');
+      endCell.textContent = D.formatDate(interval.end);
+      const statusCell = document.createElement('td');
+      const status = document.createElement('span');
+      status.setAttribute('aria-live', 'polite');
+      statusCell.appendChild(status);
+
+      row.append(countCell, dateCell, weekdayCell, startCell, endCell, statusCell);
+      updateMeetingDateRow(input, weekdayCell, status, row, interval);
+
+      const onDateChange = () => {
+        setMeetingDateDraft(filing.key, index, input.value.trim());
         updateMeetingDateRow(input, weekdayCell, status, row, interval);
         refreshLaborMeetingCopy();
       };
@@ -329,8 +421,8 @@
     const endRaw = $(endSelector).value;
     if (!startRaw && !endRaw) return null;
     if (!startRaw || !endRaw) throw new Error(`請完整選擇${scopeLabel}的屆期起日與迄日`);
-    const start = D.parseISODate(startRaw);
-    const end = D.parseISODate(endRaw);
+    const start = D.parseFlexibleDate(startRaw);
+    const end = D.parseFlexibleDate(endRaw);
     if (!start || !end) throw new Error(`${scopeLabel}日期格式不正確`);
     return createLaborTerm(scope, scopeLabel, termNo, start, end);
   }
@@ -357,10 +449,12 @@
         const raw = getMeetingDateDraft(term.key, index);
         let meetingText = '未填預計開會日期';
         if (raw) {
-          const meetingDate = D.parseISODate(raw);
+          const meetingDate = D.parseFlexibleDate(raw);
           if (meetingDate) {
             const within = meetingDate >= interval.start && meetingDate <= interval.end;
             meetingText = `預計開會 ${D.formatDate(meetingDate)} ${D.formatWeekday(meetingDate)}｜${within ? '符合區間' : '超出區間'}`;
+          } else {
+            meetingText = `預計開會日期格式錯誤：${raw}`;
           }
         }
         lines.push(`第${index + 1}次｜${D.formatDate(interval.start)}～${D.formatDate(interval.end)}｜${meetingText}`);
@@ -371,7 +465,20 @@
       const filing = activeLaborMeetingState.filing;
       lines.push('', `預計送件日：${D.formatDate(filing.date)}`);
       lines.push(`送件日前一年區間：${D.formatDate(filing.start)}～${D.formatDate(filing.end)}`);
-      filing.rows.forEach((row) => lines.push(`${row[0]}｜${row[1]}～${row[2]}`));
+      filing.intervals.forEach((interval, index) => {
+        const raw = getMeetingDateDraft(filing.key, index);
+        let meetingText = '未填預計開會日期';
+        if (raw) {
+          const meetingDate = D.parseFlexibleDate(raw);
+          if (meetingDate) {
+            const within = meetingDate >= interval.start && meetingDate <= interval.end;
+            meetingText = `預計開會 ${D.formatDate(meetingDate)} ${D.formatWeekday(meetingDate)}｜${within ? '符合區間' : '超出區間'}`;
+          } else {
+            meetingText = `預計開會日期格式錯誤：${raw}`;
+          }
+        }
+        lines.push(`${filing.labels[index] || `區間${index + 1}`}｜${D.formatDate(interval.start)}～${D.formatDate(interval.end)}｜${meetingText}`);
+      });
     }
     copyValues.laborMeeting = lines.join('\n');
   }
@@ -499,28 +606,26 @@
       let filing = null;
       const filingRaw = $('#laborFilingDate').value;
       if (filingRaw) {
-        const filingDate = D.parseISODate(filingRaw);
+        const filingDate = D.parseFlexibleDate(filingRaw);
         if (!filingDate) throw new Error('預計送件日格式不正確');
         const filingStart = D.addDuration(filingDate, -1, 0, 0);
         const filingEnd = D.addDays(filingDate, -1);
         const filingIntervals = D.generateMonthIntervals(filingStart, filingEnd, 3);
-        const filingRows = filingIntervals.map((interval, index) => {
-          const matchedLabel = findMeetingIntervalLabel(terms, interval.start);
-          return [matchedLabel || `區間${index + 1}`, D.formatDate(interval.start), D.formatDate(interval.end)];
-        });
-        tableContainer.appendChild(createResultTable(
-          '預計送件日前一年勞資會議區間',
-          ['對應次數', '起日', '迄日'],
-          filingRows,
-          `${D.formatDate(filingStart)} ～ ${D.formatDate(filingEnd)}`
-        ));
-        filing = { date: filingDate, start: filingStart, end: filingEnd, rows: filingRows };
+        filing = {
+          date: filingDate,
+          start: filingStart,
+          end: filingEnd,
+          intervals: filingIntervals,
+          labels: [],
+          key: `filing-${D.toISODate(filingDate)}-${D.toISODate(filingStart)}-${D.toISODate(filingEnd)}`
+        };
+        tableContainer.appendChild(createFilingMeetingTable(filing, terms));
       }
 
       const totalMeetings = terms.reduce((sum, term) => sum + term.intervals.length, 0);
       $('#laborMeetingMain').textContent = `顯示 ${terms.length} 屆｜共 ${totalMeetings} 次`;
       $('#laborMeetingSub').textContent = terms.map((term) => `${term.scopeLabel} ${meetingLabel(term)}`).join('、');
-      $('#laborMeetingMeta').textContent = '每 3 個月 1 個區間｜預計開會日期會自動帶出星期並確認是否符合區間';
+      $('#laborMeetingMeta').textContent = '每 3 個月 1 個區間｜屆期、送件日與預計開會日期皆支援西元／民國多種格式';
       activeLaborMeetingState = { terms, filing };
       refreshLaborMeetingCopy();
       showResult('#laborMeetingResult');
@@ -576,6 +681,24 @@
     }
   }
 
+  function bindFlexibleDateInputs() {
+    $$('.flex-date-input').forEach((input) => {
+      const formatHint = '支援：20260101、2026/01/01、2026-01-01、2026.01.01、1150101、115/01/01、115-01-01、115.01.01';
+      input.title = formatHint;
+      input.addEventListener('blur', () => {
+        const raw = input.value.trim();
+        if (!raw) {
+          input.title = formatHint;
+          return;
+        }
+        const date = D.parseFlexibleDate(raw);
+        input.title = date
+          ? `辨識日期：${D.formatDate(date)}（${D.formatROCDate(date)}）`
+          : `日期格式不正確。${formatHint}`;
+      });
+    });
+  }
+
   function bindTabs() {
     $$('.tab-button').forEach((button) => {
       button.addEventListener('click', () => {
@@ -595,7 +718,7 @@
   function bindQuickActions() {
     $$('[data-range-days]').forEach((button) => {
       button.addEventListener('click', () => {
-        const start = D.parseISODate($('#rangeStart').value) || D.parseISODate(todayISO());
+        const start = D.parseFlexibleDate($('#rangeStart').value) || D.parseFlexibleDate(todayISO());
         $('#rangeEnd').value = D.toISODate(D.addDays(start, Number(button.dataset.rangeDays) - 1));
       });
     });
@@ -661,6 +784,7 @@
 
   function init() {
     setInitialDates();
+    bindFlexibleDateInputs();
     bindTabs();
     bindQuickActions();
     bindReset();

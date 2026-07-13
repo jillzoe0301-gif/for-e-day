@@ -7,16 +7,54 @@
 
   const DAY_MS = 24 * 60 * 60 * 1000;
 
-  function parseISODate(value) {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value || ''))) return null;
-    const [year, month, day] = value.split('-').map(Number);
-    const date = new Date(Date.UTC(year, month - 1, day));
+  function createValidUTCDate(year, month, day) {
+    const y = Number(year);
+    const m = Number(month);
+    const d = Number(day);
+    if (!Number.isInteger(y) || !Number.isInteger(m) || !Number.isInteger(d)) return null;
+    if (y < 1 || m < 1 || m > 12 || d < 1 || d > 31) return null;
+    const date = new Date(Date.UTC(y, m - 1, d));
     if (
-      date.getUTCFullYear() !== year ||
-      date.getUTCMonth() !== month - 1 ||
-      date.getUTCDate() !== day
+      date.getUTCFullYear() !== y ||
+      date.getUTCMonth() !== m - 1 ||
+      date.getUTCDate() !== d
     ) return null;
     return date;
+  }
+
+  function parseISODate(value) {
+    const text = String(value || '').trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return null;
+    const [year, month, day] = text.split('-').map(Number);
+    return createValidUTCDate(year, month, day);
+  }
+
+  function parseFlexibleDate(value) {
+    const text = String(value || '').trim();
+    if (!text) return null;
+
+    let year;
+    let month;
+    let day;
+    const separated = text.match(/^(\d{3,4})[\/.\-](\d{1,2})[\/.\-](\d{1,2})$/);
+    if (separated) {
+      year = Number(separated[1]);
+      month = Number(separated[2]);
+      day = Number(separated[3]);
+      if (separated[1].length === 3) year += 1911;
+    } else if (/^\d{8}$/.test(text)) {
+      year = Number(text.slice(0, 4));
+      month = Number(text.slice(4, 6));
+      day = Number(text.slice(6, 8));
+    } else if (/^\d{7}$/.test(text)) {
+      year = Number(text.slice(0, 3)) + 1911;
+      month = Number(text.slice(3, 5));
+      day = Number(text.slice(5, 7));
+    } else {
+      return null;
+    }
+
+    return createValidUTCDate(year, month, day);
   }
 
   function toISODate(date) {
@@ -139,6 +177,7 @@
   return {
     DAY_MS,
     parseISODate,
+    parseFlexibleDate,
     toISODate,
     formatDate,
     formatROCDate,

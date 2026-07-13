@@ -445,7 +445,7 @@ button { cursor: pointer; }
   .month-card { padding: 12px 14px; }
 }
 
-/* V1.3｜勞資會議三屆與預計開會日期 */
+/* V1.5｜全系統多格式日期輸入 */
 .term-input-card {
   padding: 18px;
   border: 1px solid #dfe5f1;
@@ -494,6 +494,11 @@ button { cursor: pointer; }
   color: #11817f;
 }
 
+.term-scope-badge.filing {
+  background: #fff3df;
+  color: #a45f08;
+}
+
 .neighbor-term-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -517,7 +522,7 @@ button { cursor: pointer; }
 }
 
 .meeting-data-table {
-  min-width: 780px;
+  min-width: 920px;
 }
 
 .meeting-count-cell {
@@ -526,7 +531,7 @@ button { cursor: pointer; }
 }
 
 .meeting-date-input {
-  width: 158px;
+  width: 205px;
   min-height: 38px;
   border: 1px solid #d8dfed;
   border-radius: 9px;
@@ -539,6 +544,16 @@ button { cursor: pointer; }
 .meeting-date-input:focus {
   border-color: var(--brand);
   box-shadow: 0 0 0 3px rgba(23, 75, 149, .11);
+}
+
+.meeting-date-input::placeholder {
+  color: #9aa3b7;
+  font-size: 12px;
+}
+
+.filing-meeting-section {
+  border-color: #f0dfbf;
+  background: linear-gradient(180deg, #fffdf8 0%, #ffffff 100%);
 }
 
 .meeting-weekday-cell {
@@ -594,4 +609,15 @@ button { cursor: pointer; }
   .term-input-card { padding: 15px; }
   .meeting-term-heading { align-items: flex-start; }
   .meeting-term-title-wrap { align-items: flex-start; }
+}
+
+
+/* 全系統彈性日期欄位 */
+.flex-date-input {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .01em;
+}
+.flex-date-input::placeholder {
+  color: #9aa3b7;
+  font-size: 12px;
 }
