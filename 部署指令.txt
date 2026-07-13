@@ -1,0 +1,9 @@
+﻿天數計算系統 V1.1｜Vercel 上線指令
+
+第一次部署：
+1. 在資料夾空白處按右鍵，選「在終端機中開啟」
+2. 執行：npx vercel login
+3. 登入完成後執行：npx vercel --prod
+
+已連結過 Vercel：
+npx vercel --prod --yes

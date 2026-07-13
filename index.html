@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#174b95">
+  <meta name="application-name" content="天數計算系統">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta property="og:title" content="天數計算系統">
+  <meta property="og:description" content="日期區間、天數與年月日快速換算工具">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="assets/social-preview.jpg">
+  <meta name="description" content="日期區間、天數、年月日快速換算工具">
+  <title>天數計算系統</title>
+  <link rel="icon" href="assets/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="hero">
+      <a class="brand-link" href="./" aria-label="回到天數計算系統首頁">
+        <img class="brand-logo" src="assets/logo.png" alt="天數計算系統 Days Calculator">
+      </a>
+      <div class="hero-meta">
+        <div class="version-badge">正式版 V1.1</div>
+        <div class="today-chip" id="todayText"></div>
+      </div>
+    </header>
+
+    <div class="rule-banner">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg>
+      <div><strong>計算原則：</strong>日期區間與「起日＋天數」皆將起日計為第 1 天；天數換算年月日採 1 年＝365 天、1 月＝30 天。</div>
+    </div>
+
+    <div class="workspace">
+      <section class="tool-panel">
+        <nav class="tabs" aria-label="計算工具">
+          <button class="tab-button active" type="button" data-tab="range">日期區間計算</button>
+          <button class="tab-button" type="button" data-tab="add">起日推算迄日</button>
+          <button class="tab-button" type="button" data-tab="convert">天數換算</button>
+        </nav>
+
+        <section class="tab-content active" id="tab-range">
+          <div class="section-head">
+            <div>
+              <h2>起日／迄日計算</h2>
+              <p>一次顯示總天數及完整的年、月、日差距。</p>
+            </div>
+          </div>
+          <form id="rangeForm" novalidate>
+            <div class="input-grid">
+              <div class="field">
+                <label for="rangeStart">起日</label>
+                <div class="input-wrap"><input id="rangeStart" type="date" required></div>
+              </div>
+              <div class="field">
+                <label for="rangeEnd">迄日</label>
+                <div class="input-wrap"><input id="rangeEnd" type="date" required></div>
+              </div>
+            </div>
+            <div class="quick-actions" aria-label="快速設定期間">
+              <button class="chip-button" type="button" data-range-days="7">7 天</button>
+              <button class="chip-button" type="button" data-range-days="14">14 天</button>
+              <button class="chip-button" type="button" data-range-days="30">30 天</button>
+              <button class="chip-button" type="button" data-range-days="90">90 天</button>
+              <button class="chip-button" type="button" data-range-days="365">365 天</button>
+              <button class="chip-button" type="button" id="swapRange">交換日期</button>
+            </div>
+            <div class="form-actions">
+              <button class="primary-button" type="submit">開始計算</button>
+              <button class="secondary-button" type="button" data-reset="range">清除結果</button>
+            </div>
+            <div class="error-message" id="rangeError" role="alert"></div>
+          </form>
+          <div class="result-card" id="rangeResult" aria-live="polite">
+            <div class="result-top">
+              <div>
+                <div class="result-label">日期區間總天數</div>
+                <div class="result-main" id="rangeMain"></div>
+                <div class="result-sub" id="rangeSub"></div>
+              </div>
+              <button class="copy-button" type="button" data-copy-target="range">複製</button>
+            </div>
+            <div class="result-meta" id="rangeMeta"></div>
+          </div>
+        </section>
+
+        <section class="tab-content" id="tab-add">
+          <div class="section-head">
+            <div>
+              <h2>起日推算迄日</h2>
+              <p>可依年月日或指定天數，快速推算最後日期。</p>
+            </div>
+          </div>
+          <div class="mode-switch" role="tablist" aria-label="推算方式">
+            <button class="mode-button active" type="button" data-mode="ymd">加年／月／日</button>
+            <button class="mode-button" type="button" data-mode="days">加天數</button>
+          </div>
+
+          <div class="mode-panel active" id="mode-ymd">
+            <form id="addYmdForm" novalidate>
+              <div class="field" style="margin-bottom:16px">
+                <label for="addYmdStart">起日</label>
+                <div class="input-wrap"><input id="addYmdStart" type="date" required></div>
+              </div>
+              <div class="input-grid three">
+                <div class="field"><label for="addYears">年</label><div class="input-wrap with-suffix"><input id="addYears" type="number" min="0" step="1" value="0" inputmode="numeric"><span class="suffix">年</span></div></div>
+                <div class="field"><label for="addMonths">月</label><div class="input-wrap with-suffix"><input id="addMonths" type="number" min="0" step="1" value="0" inputmode="numeric"><span class="suffix">月</span></div></div>
+                <div class="field"><label for="addDays">日</label><div class="input-wrap with-suffix"><input id="addDays" type="number" min="0" step="1" value="0" inputmode="numeric"><span class="suffix">日</span></div></div>
+              </div>
+              <div class="form-actions">
+                <button class="primary-button" type="submit">推算迄日</button>
+                <button class="secondary-button" type="button" data-reset="addYmd">清除結果</button>
+              </div>
+              <div class="error-message" id="addYmdError" role="alert"></div>
+            </form>
+            <div class="result-card" id="addYmdResult" aria-live="polite">
+              <div class="result-top"><div><div class="result-label">推算後迄日</div><div class="result-main" id="addYmdMain"></div><div class="result-sub" id="addYmdSub"></div></div><button class="copy-button" type="button" data-copy-target="addYmd">複製</button></div>
+              <div class="result-meta" id="addYmdMeta"></div>
+            </div>
+          </div>
+
+          <div class="mode-panel" id="mode-days">
+            <form id="addDaysForm" novalidate>
+              <div class="input-grid">
+                <div class="field"><label for="addDaysStart">起日</label><div class="input-wrap"><input id="addDaysStart" type="date" required></div></div>
+                <div class="field"><label for="durationDays">天數</label><div class="input-wrap with-suffix"><input id="durationDays" type="number" min="1" step="1" value="14" inputmode="numeric" required><span class="suffix">天</span></div></div>
+              </div>
+              <div class="quick-actions" aria-label="快速天數">
+                <button class="chip-button" type="button" data-add-days="7">7 天</button>
+                <button class="chip-button" type="button" data-add-days="14">14 天</button>
+                <button class="chip-button" type="button" data-add-days="30">30 天</button>
+                <button class="chip-button" type="button" data-add-days="90">90 天</button>
+                <button class="chip-button" type="button" data-add-days="180">180 天</button>
+                <button class="chip-button" type="button" data-add-days="365">365 天</button>
+              </div>
+              <div class="form-actions">
+                <button class="primary-button" type="submit">推算迄日</button>
+                <button class="secondary-button" type="button" data-reset="addDays">清除結果</button>
+              </div>
+              <div class="error-message" id="addDaysError" role="alert"></div>
+            </form>
+            <div class="result-card" id="addDaysResult" aria-live="polite">
+              <div class="result-top"><div><div class="result-label">推算後迄日</div><div class="result-main" id="addDaysMain"></div><div class="result-sub" id="addDaysSub"></div></div><button class="copy-button" type="button" data-copy-target="addDays">複製</button></div>
+              <div class="result-meta" id="addDaysMeta"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="tab-content" id="tab-convert">
+          <div class="section-head">
+            <div>
+              <h2>天數換算年／月／日</h2>
+              <p>依 1 年 365 天、1 月 30 天，將總天數拆分顯示。</p>
+            </div>
+          </div>
+          <form id="convertForm" novalidate>
+            <div class="field">
+              <label for="convertDays">總天數</label>
+              <div class="input-wrap with-suffix"><input id="convertDays" type="number" min="0" step="1" value="897" inputmode="numeric" required><span class="suffix">天</span></div>
+            </div>
+            <div class="quick-actions" aria-label="快速天數">
+              <button class="chip-button" type="button" data-convert-days="30">30 天</button>
+              <button class="chip-button" type="button" data-convert-days="90">90 天</button>
+              <button class="chip-button" type="button" data-convert-days="180">180 天</button>
+              <button class="chip-button" type="button" data-convert-days="365">365 天</button>
+              <button class="chip-button" type="button" data-convert-days="730">730 天</button>
+            </div>
+            <div class="form-actions">
+              <button class="primary-button" type="submit">開始換算</button>
+              <button class="secondary-button" type="button" data-reset="convert">清除結果</button>
+            </div>
+            <div class="error-message" id="convertError" role="alert"></div>
+          </form>
+          <div class="result-card" id="convertResult" aria-live="polite">
+            <div class="result-top"><div><div class="result-label">換算結果</div><div class="result-main" id="convertMain"></div><div class="result-sub" id="convertSub"></div></div><button class="copy-button" type="button" data-copy-target="convert">複製</button></div>
+            <div class="result-meta" id="convertMeta"></div>
+          </div>
+          <div class="footnote">此功能為固定天數換算，並非以特定起日計算實際曆法月份；若需精確日期，請使用「起日推算迄日」。</div>
+        </section>
+      </section>
+
+      <aside class="history-panel">
+        <div class="history-header"><h3>最近計算紀錄</h3><button class="clear-history" type="button" id="clearHistory">清除</button></div>
+        <div class="history-list" id="historyList"></div>
+      </aside>
+    </div>
+    <footer class="site-footer">
+      <span>天數計算系統</span>
+      <span class="footer-dot" aria-hidden="true"></span>
+      <span>正式版 V1.1</span>
+      <span class="footer-dot" aria-hidden="true"></span>
+      <span>更新日期 2026/07/13</span>
+    </footer>
+  </main>
+
+  <div class="toast" id="toast" role="status"></div>
+  <script src="calc.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
