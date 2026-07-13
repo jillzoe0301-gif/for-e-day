@@ -8,10 +8,10 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta property="og:title" content="天數計算系統">
-  <meta property="og:description" content="日期區間、天數與年月日快速換算工具">
+  <meta property="og:description" content="日期區間、勞資會議與勞保人數區間快速計算工具">
   <meta property="og:type" content="website">
   <meta property="og:image" content="assets/social-preview.jpg">
-  <meta name="description" content="日期區間、天數、年月日快速換算工具">
+  <meta name="description" content="日期區間、勞資會議與勞保人數區間快速計算工具">
   <title>天數計算系統</title>
   <link rel="icon" href="assets/favicon.ico" sizes="any">
   <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
@@ -27,14 +27,14 @@
         <img class="brand-logo" src="assets/logo.png" alt="天數計算系統 Days Calculator">
       </a>
       <div class="hero-meta">
-        <div class="version-badge">正式版 V1.1</div>
+        <div class="version-badge">正式版 V1.3</div>
         <div class="today-chip" id="todayText"></div>
       </div>
     </header>
 
     <div class="rule-banner">
       <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg>
-      <div><strong>計算原則：</strong>日期區間與「起日＋天數」皆將起日計為第 1 天；天數換算年月日採 1 年＝365 天、1 月＝30 天。</div>
+      <div><strong>計算原則：</strong>日期區間與「起日＋天數」皆將起日計為第 1 天；勞資會議依每 3 個月切分；勞保人數提供區間依申請月份往前第 8 至第 3 個月計算。</div>
     </div>
 
     <div class="workspace">
@@ -43,6 +43,8 @@
           <button class="tab-button active" type="button" data-tab="range">日期區間計算</button>
           <button class="tab-button" type="button" data-tab="add">起日推算迄日</button>
           <button class="tab-button" type="button" data-tab="convert">天數換算</button>
+          <button class="tab-button" type="button" data-tab="labor-meeting">勞資會議區間</button>
+          <button class="tab-button" type="button" data-tab="insurance">勞保人數區間</button>
         </nav>
 
         <section class="tab-content active" id="tab-range">
@@ -183,6 +185,132 @@
           </div>
           <div class="footnote">此功能為固定天數換算，並非以特定起日計算實際曆法月份；若需精確日期，請使用「起日推算迄日」。</div>
         </section>
+
+        <section class="tab-content" id="tab-labor-meeting">
+          <div class="section-head">
+            <div>
+              <h2>勞資會議計算區間</h2>
+              <p>可同時查看當屆、上一屆與下一屆；每次會議都能輸入預計開會日期，自動帶出星期並確認是否落在正確區間。</p>
+            </div>
+          </div>
+          <form id="laborMeetingForm" novalidate>
+            <section class="term-input-card current-term-card">
+              <div class="term-input-heading">
+                <span class="term-scope-badge current">當屆</span>
+                <strong>當屆屆期資料</strong>
+              </div>
+              <div class="input-grid three">
+                <div class="field">
+                  <label for="laborTermNo">當屆屆別</label>
+                  <div class="input-wrap with-suffix"><input id="laborTermNo" type="number" min="1" step="1" value="3" inputmode="numeric" required><span class="suffix">屆</span></div>
+                </div>
+                <div class="field">
+                  <label for="laborTermStart">屆期起日</label>
+                  <div class="input-wrap"><input id="laborTermStart" type="date" required></div>
+                </div>
+                <div class="field">
+                  <label for="laborTermEnd">屆期迄日</label>
+                  <div class="input-wrap"><input id="laborTermEnd" type="date" required></div>
+                </div>
+              </div>
+            </section>
+
+            <div class="neighbor-term-grid">
+              <section class="term-input-card">
+                <div class="term-input-heading">
+                  <span class="term-scope-badge previous">上一屆</span>
+                  <strong>上一屆屆期資料</strong>
+                </div>
+                <div class="input-grid">
+                  <div class="field">
+                    <label for="laborPrevStart">屆期起日</label>
+                    <div class="input-wrap"><input id="laborPrevStart" type="date"></div>
+                  </div>
+                  <div class="field">
+                    <label for="laborPrevEnd">屆期迄日</label>
+                    <div class="input-wrap"><input id="laborPrevEnd" type="date"></div>
+                  </div>
+                </div>
+                <div class="field-help">上一屆日期可獨立輸入，不會強制與當屆日期連續。</div>
+              </section>
+
+              <section class="term-input-card">
+                <div class="term-input-heading">
+                  <span class="term-scope-badge next">下一屆</span>
+                  <strong>下一屆屆期資料</strong>
+                </div>
+                <div class="input-grid">
+                  <div class="field">
+                    <label for="laborNextStart">屆期起日</label>
+                    <div class="input-wrap"><input id="laborNextStart" type="date"></div>
+                  </div>
+                  <div class="field">
+                    <label for="laborNextEnd">屆期迄日</label>
+                    <div class="input-wrap"><input id="laborNextEnd" type="date"></div>
+                  </div>
+                </div>
+                <div class="field-help">尚未確認下一屆日期時可先留白，之後再補登。</div>
+              </section>
+            </div>
+
+            <div class="field meeting-filing-field">
+              <label for="laborFilingDate">預計送件日</label>
+              <div class="input-wrap"><input id="laborFilingDate" type="date"></div>
+              <div class="field-help">填寫後，會一併列出「送件日前 1 年起至送件日前 1 日」的 4 個勞資會議區間。</div>
+            </div>
+            <div class="form-actions">
+              <button class="primary-button" type="submit">計算會議區間</button>
+              <button class="secondary-button" type="button" data-reset="laborMeeting">清除結果</button>
+            </div>
+            <div class="error-message" id="laborMeetingError" role="alert"></div>
+          </form>
+          <div class="result-card result-card-table" id="laborMeetingResult" aria-live="polite">
+            <div class="result-top">
+              <div>
+                <div class="result-label">勞資會議屆期區間</div>
+                <div class="result-main result-main-compact" id="laborMeetingMain"></div>
+                <div class="result-sub" id="laborMeetingSub"></div>
+              </div>
+              <button class="copy-button" type="button" data-copy-target="laborMeeting">複製全部</button>
+            </div>
+            <div class="result-meta" id="laborMeetingMeta"></div>
+            <div id="laborMeetingTables"></div>
+          </div>
+          <div class="footnote">每屆依起日每 3 個月切分；預計開會日期會自動顯示星期，並以綠色或紅色標示是否符合該次會議區間。</div>
+        </section>
+
+        <section class="tab-content" id="tab-insurance">
+          <div class="section-head">
+            <div>
+              <h2>勞保人數提供區間</h2>
+              <p>選擇申請月份，自動帶出需提供的 6 個月份，並正確處理跨年度。</p>
+            </div>
+          </div>
+          <form id="insuranceForm" novalidate>
+            <div class="field">
+              <label for="insuranceApplicationMonth">申請月份</label>
+              <div class="input-wrap"><input id="insuranceApplicationMonth" type="month" required></div>
+              <div class="field-help">計算規則：申請月份往前第 8 個月至第 3 個月，共 6 個月份。</div>
+            </div>
+            <div class="form-actions">
+              <button class="primary-button" type="submit">計算提供區間</button>
+              <button class="secondary-button" type="button" data-reset="insurance">清除結果</button>
+            </div>
+            <div class="error-message" id="insuranceError" role="alert"></div>
+          </form>
+          <div class="result-card result-card-table" id="insuranceResult" aria-live="polite">
+            <div class="result-top">
+              <div>
+                <div class="result-label">勞保人數提供月份</div>
+                <div class="result-main result-main-compact" id="insuranceMain"></div>
+                <div class="result-sub" id="insuranceSub"></div>
+              </div>
+              <button class="copy-button" type="button" data-copy-target="insurance">複製</button>
+            </div>
+            <div class="result-meta" id="insuranceMeta"></div>
+            <div id="insuranceMonths"></div>
+          </div>
+        </section>
       </section>
 
       <aside class="history-panel">
@@ -193,7 +321,7 @@
     <footer class="site-footer">
       <span>天數計算系統</span>
       <span class="footer-dot" aria-hidden="true"></span>
-      <span>正式版 V1.1</span>
+      <span>正式版 V1.3</span>
       <span class="footer-dot" aria-hidden="true"></span>
       <span>更新日期 2026/07/13</span>
     </footer>

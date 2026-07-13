@@ -35,6 +35,10 @@
     return `民國${date.getUTCFullYear() - 1911}年${date.getUTCMonth() + 1}月${date.getUTCDate()}日`;
   }
 
+  function formatWeekday(date) {
+    return ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'][date.getUTCDay()];
+  }
+
   function addDays(date, days) {
     return new Date(date.getTime() + Number(days) * DAY_MS);
   }
@@ -107,17 +111,45 @@
     return text || '0日';
   }
 
+  function generateMonthIntervals(start, end, intervalMonths) {
+    if (!(start instanceof Date) || Number.isNaN(start.getTime())) throw new Error('起日格式不正確');
+    if (!(end instanceof Date) || Number.isNaN(end.getTime())) throw new Error('迄日格式不正確');
+    if (end < start) throw new Error('迄日不可早於起日');
+    const months = Number(intervalMonths);
+    if (!Number.isInteger(months) || months < 1) throw new Error('區間月份必須為 1 以上整數');
+
+    const intervals = [];
+    let cursor = new Date(start.getTime());
+    let guard = 0;
+    while (cursor <= end) {
+      const nextStart = addDuration(cursor, 0, months, 0);
+      const intervalEnd = nextStart > end ? new Date(end.getTime()) : addDays(nextStart, -1);
+      intervals.push({ start: new Date(cursor.getTime()), end: intervalEnd });
+      cursor = addDays(intervalEnd, 1);
+      guard += 1;
+      if (guard > 240) throw new Error('計算區間過長，請確認日期');
+    }
+    return intervals;
+  }
+
+  function findIntervalIndex(intervals, date) {
+    return intervals.findIndex((interval) => date >= interval.start && date <= interval.end);
+  }
+
   return {
     DAY_MS,
     parseISODate,
     toISODate,
     formatDate,
     formatROCDate,
+    formatWeekday,
     addDays,
     addDuration,
     inclusiveDays,
     calendarDiffInclusive,
     daysToYMD,
-    formatYMD
+    formatYMD,
+    generateMonthIntervals,
+    findIntervalIndex
   };
 });

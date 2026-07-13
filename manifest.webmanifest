@@ -1,7 +1,7 @@
 {
   "name": "天數計算系統",
   "short_name": "天數計算",
-  "description": "日期區間、天數與年月日快速換算工具",
+  "description": "日期區間、勞資會議與勞保人數區間快速計算工具",
   "lang": "zh-TW",
   "start_url": "./",
   "scope": "./",
