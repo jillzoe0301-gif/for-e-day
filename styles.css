@@ -621,3 +621,26 @@ button { cursor: pointer; }
   color: #9aa3b7;
   font-size: 12px;
 }
+
+
+.meeting-heading-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.meeting-export-button {
+  min-height: 36px;
+  padding: 7px 12px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .meeting-heading-actions {
+    align-items: flex-start;
+    justify-content: flex-start;
+  }
+}

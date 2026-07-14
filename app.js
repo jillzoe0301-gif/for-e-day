@@ -4,6 +4,7 @@
   const STORAGE_KEY = 'days-calculator-history-v1';
   const MEETING_DATES_STORAGE_KEY = 'days-calculator-meeting-dates-v1';
   const copyValues = {};
+  const LABOR_MEETING_EXPORT_NOTE = '定期規律召開勞資會議：召開勞資會議應具備「規律性」與「時間可預期性」，事業單位可自行訂定「每3個月（或低於3個月）」為固定週期；週期一經確立，即必須在該特定週期內至少召開1次以上之會議。';
   let meetingDateDrafts = loadMeetingDateDrafts();
   let activeLaborMeetingState = null;
 
@@ -249,6 +250,170 @@
     return input;
   }
 
+
+  function wrapCanvasText(ctx, text, maxWidth) {
+    const lines = [];
+    let current = '';
+    for (const char of Array.from(text || '')) {
+      const test = current + char;
+      if (current && ctx.measureText(test).width > maxWidth) {
+        lines.push(current);
+        current = char;
+      } else {
+        current = test;
+      }
+    }
+    if (current) lines.push(current);
+    return lines.length ? lines : [''];
+  }
+
+  function makeMeetingTermFilename(term) {
+    const title = term.termNo ? `第${term.termNo}屆勞資會議區間` : `${term.scopeLabel}勞資會議區間`;
+    return `${title}_${D.toISODate(term.start)}_${D.toISODate(term.end)}.png`;
+  }
+
+  function downloadMeetingTermImage(term) {
+    const title = term.termNo ? `第${term.termNo}屆勞資會議區間` : `${term.scopeLabel}勞資會議區間`;
+    const dateRange = `${D.formatDate(term.start)} ～ ${D.formatDate(term.end)}`;
+    const headers = ['次數', '起日', '迄日'];
+    const rows = term.intervals.map((interval, index) => [
+      `第${index + 1}次`,
+      D.formatDate(interval.start),
+      D.formatDate(interval.end)
+    ]);
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const width = 1240;
+    const paddingX = 56;
+    const titleTop = 66;
+    const dateTop = 114;
+    const tableTop = 168;
+    const rowHeight = 54;
+    const tableWidth = width - paddingX * 2;
+    const colWidths = [180, 420, 420];
+    const headerHeight = 50;
+    const tableHeight = headerHeight + rows.length * rowHeight;
+    const noteBoxTop = tableTop + tableHeight + 28;
+    const noteBoxWidth = tableWidth;
+    ctx.font = '26px "Noto Sans TC", "Microsoft JhengHei", sans-serif';
+    const noteLines = wrapCanvasText(ctx, LABOR_MEETING_EXPORT_NOTE, noteBoxWidth - 42);
+    const noteLineHeight = 38;
+    const noteBoxHeight = 34 + noteLines.length * noteLineHeight + 18;
+    const footerHeight = 50;
+    const height = noteBoxTop + noteBoxHeight + footerHeight;
+
+    const dpr = Math.max(1, window.devicePixelRatio || 1);
+    canvas.width = Math.round(width * dpr);
+    canvas.height = Math.round(height * dpr);
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
+    ctx.scale(dpr, dpr);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, width, height);
+
+    const bgGradient = ctx.createLinearGradient(0, 0, width, height);
+    bgGradient.addColorStop(0, '#f8fbff');
+    bgGradient.addColorStop(1, '#f4fbfb');
+    ctx.fillStyle = bgGradient;
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.fillStyle = '#174b95';
+    ctx.font = '700 38px "Noto Sans TC", "Microsoft JhengHei", sans-serif';
+    ctx.fillText(title, paddingX, titleTop);
+
+    ctx.fillStyle = '#5c6a86';
+    ctx.font = '600 24px "Noto Sans TC", "Microsoft JhengHei", sans-serif';
+    ctx.fillText(dateRange, paddingX, dateTop);
+
+    // table container
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = '#d8e2f1';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(paddingX, tableTop, tableWidth, tableHeight, 16);
+    ctx.fill();
+    ctx.stroke();
+
+    // header bg
+    ctx.fillStyle = '#eef4ff';
+    ctx.beginPath();
+    ctx.roundRect(paddingX, tableTop, tableWidth, headerHeight, 16);
+    ctx.fill();
+    ctx.fillRect(paddingX, tableTop + 16, tableWidth, headerHeight - 16);
+
+    // grid lines
+    let x = paddingX;
+    for (let i = 0; i < colWidths.length + 1; i++) {
+      ctx.strokeStyle = '#e3e8f3';
+      ctx.beginPath();
+      ctx.moveTo(x, tableTop);
+      ctx.lineTo(x, tableTop + tableHeight);
+      ctx.stroke();
+      x += colWidths[i] || 0;
+    }
+    for (let r = 0; r <= rows.length; r++) {
+      const y = tableTop + headerHeight + r * rowHeight;
+      ctx.beginPath();
+      ctx.moveTo(paddingX, y);
+      ctx.lineTo(paddingX + tableWidth, y);
+      ctx.stroke();
+    }
+
+    // headers text
+    ctx.fillStyle = '#41506d';
+    ctx.font = '700 20px "Noto Sans TC", "Microsoft JhengHei", sans-serif';
+    let left = paddingX;
+    headers.forEach((header, idx) => {
+      ctx.fillText(header, left + 18, tableTop + 32);
+      left += colWidths[idx];
+    });
+
+    // rows text
+    rows.forEach((row, rowIndex) => {
+      const y = tableTop + headerHeight + rowIndex * rowHeight;
+      if (rowIndex % 2 === 0) {
+        ctx.fillStyle = '#fcfdff';
+        ctx.fillRect(paddingX + 1, y + 1, tableWidth - 2, rowHeight - 1);
+      }
+      ctx.fillStyle = '#34405c';
+      ctx.font = '700 19px "Noto Sans TC", "Microsoft JhengHei", sans-serif';
+      ctx.fillText(row[0], paddingX + 18, y + 33);
+      ctx.font = '500 19px "Noto Sans TC", "Microsoft JhengHei", sans-serif';
+      ctx.fillText(row[1], paddingX + colWidths[0] + 18, y + 33);
+      ctx.fillText(row[2], paddingX + colWidths[0] + colWidths[1] + 18, y + 33);
+    });
+
+    // reminder box
+    ctx.fillStyle = '#fff7ea';
+    ctx.strokeStyle = '#f0ddba';
+    ctx.beginPath();
+    ctx.roundRect(paddingX, noteBoxTop, noteBoxWidth, noteBoxHeight, 16);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#9b6114';
+    ctx.font = '700 20px "Noto Sans TC", "Microsoft JhengHei", sans-serif';
+    ctx.fillText('提醒', paddingX + 18, noteBoxTop + 32);
+
+    ctx.fillStyle = '#6f5b3b';
+    ctx.font = '500 20px "Noto Sans TC", "Microsoft JhengHei", sans-serif';
+    noteLines.forEach((line, index) => {
+      ctx.fillText(line, paddingX + 18, noteBoxTop + 70 + index * noteLineHeight);
+    });
+
+    ctx.fillStyle = '#94a0b7';
+    ctx.font = '500 15px "Noto Sans TC", "Microsoft JhengHei", sans-serif';
+    ctx.fillText('天數計算系統｜勞資會議區間圖檔', paddingX, height - 18);
+
+    const link = document.createElement('a');
+    link.href = canvas.toDataURL('image/png');
+    link.download = makeMeetingTermFilename(term);
+    link.click();
+    showToast('已下載勞資會議圖檔');
+  }
+
   function createMeetingTermTable(term) {
     const section = document.createElement('section');
     section.className = `result-table-section meeting-term-section ${term.scope}`;
@@ -263,9 +428,17 @@
     const title = document.createElement('h3');
     title.textContent = term.termNo ? `第${term.termNo}屆勞資會議區間` : `${term.scopeLabel}勞資會議區間`;
     titleWrap.append(badge, title);
+    const actions = document.createElement('div');
+    actions.className = 'meeting-heading-actions';
     const note = document.createElement('span');
     note.textContent = `${D.formatDate(term.start)} ～ ${D.formatDate(term.end)}｜共 ${term.intervals.length} 次`;
-    heading.append(titleWrap, note);
+    const exportButton = document.createElement('button');
+    exportButton.type = 'button';
+    exportButton.className = 'secondary-button meeting-export-button';
+    exportButton.textContent = '下載圖檔';
+    exportButton.addEventListener('click', () => downloadMeetingTermImage(term));
+    actions.append(note, exportButton);
+    heading.append(titleWrap, actions);
 
     const wrap = document.createElement('div');
     wrap.className = 'table-scroll';
