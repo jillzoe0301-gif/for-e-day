@@ -284,18 +284,18 @@
 
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
-    const width = 1240;
+    const width = 980;
     const paddingX = 56;
     const titleTop = 66;
     const dateTop = 114;
     const tableTop = 168;
     const rowHeight = 54;
-    const tableWidth = width - paddingX * 2;
-    const colWidths = [180, 420, 420];
+    const colWidths = [140, 220, 220];
+    const tableWidth = colWidths.reduce((sum, value) => sum + value, 0);
     const headerHeight = 50;
     const tableHeight = headerHeight + rows.length * rowHeight;
     const noteBoxTop = tableTop + tableHeight + 28;
-    const noteBoxWidth = tableWidth;
+    const noteBoxWidth = width - paddingX * 2;
     ctx.font = '26px "Noto Sans TC", "Microsoft JhengHei", sans-serif';
     const noteLines = wrapCanvasText(ctx, LABOR_MEETING_EXPORT_NOTE, noteBoxWidth - 42);
     const noteLineHeight = 38;

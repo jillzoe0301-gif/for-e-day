@@ -27,7 +27,7 @@
         <img class="brand-logo" src="assets/logo.png" alt="天數計算系統 Days Calculator">
       </a>
       <div class="hero-meta">
-        <div class="version-badge">正式版 V1.6</div>
+        <div class="version-badge">正式版 V1.7</div>
         <div class="today-chip" id="todayText"></div>
       </div>
     </header>
@@ -100,11 +100,11 @@
             </div>
           </div>
           <div class="mode-switch" role="tablist" aria-label="推算方式">
-            <button class="mode-button active" type="button" data-mode="ymd">加年／月／日</button>
-            <button class="mode-button" type="button" data-mode="days">加天數</button>
+            <button class="mode-button active" type="button" data-mode="days">加天數</button>
+            <button class="mode-button" type="button" data-mode="ymd">加年／月／日</button>
           </div>
 
-          <div class="mode-panel active" id="mode-ymd">
+          <div class="mode-panel" id="mode-ymd">
             <form id="addYmdForm" novalidate>
               <div class="field" style="margin-bottom:16px">
                 <label for="addYmdStart">起日</label>
@@ -127,7 +127,7 @@
             </div>
           </div>
 
-          <div class="mode-panel" id="mode-days">
+          <div class="mode-panel active" id="mode-days">
             <form id="addDaysForm" novalidate>
               <div class="input-grid">
                 <div class="field"><label for="addDaysStart">起日</label><div class="input-wrap"><input id="addDaysStart" class="flex-date-input" type="text" inputmode="text" autocomplete="off" spellcheck="false" placeholder="例：20260101 或 115/01/01" required></div></div>
@@ -321,7 +321,7 @@
     <footer class="site-footer">
       <span>天數計算系統</span>
       <span class="footer-dot" aria-hidden="true"></span>
-      <span>正式版 V1.6</span>
+      <span>正式版 V1.7</span>
       <span class="footer-dot" aria-hidden="true"></span>
       <span>更新日期 2026/07/13</span>
     </footer>
