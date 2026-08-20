@@ -8,10 +8,10 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta property="og:title" content="天數計算系統">
-  <meta property="og:description" content="日期區間、勞資會議與勞保人數區間快速計算工具">
+  <meta property="og:description" content="日期區間、勞資會議與勞保收據區間快速計算工具">
   <meta property="og:type" content="website">
   <meta property="og:image" content="assets/social-preview.jpg">
-  <meta name="description" content="日期區間、勞資會議與勞保人數區間快速計算工具">
+  <meta name="description" content="日期區間、勞資會議與勞保收據區間快速計算工具">
   <title>天數計算系統</title>
   <link rel="icon" href="assets/favicon.ico" sizes="any">
   <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
@@ -27,7 +27,7 @@
         <img class="brand-logo" src="assets/logo.png" alt="天數計算系統 Days Calculator">
       </a>
       <div class="hero-meta">
-        <div class="version-badge">正式版 V1.9</div>
+        <div class="version-badge">正式版 V1.10</div>
         <div class="today-chip" id="todayText"></div>
       </div>
     </header>
@@ -44,7 +44,7 @@
           <button class="tab-button" type="button" data-tab="add">起日推算迄日</button>
           <button class="tab-button" type="button" data-tab="convert">天數換算</button>
           <button class="tab-button" type="button" data-tab="labor-meeting">勞資會議紀錄區間</button>
-          <button class="tab-button" type="button" data-tab="insurance">勞保人數區間</button>
+          <button class="tab-button" type="button" data-tab="insurance">勞保收據區間</button>
         </nav>
 
         <section class="tab-content active" id="tab-range">
@@ -285,7 +285,7 @@
         <section class="tab-content" id="tab-insurance">
           <div class="section-head">
             <div>
-              <h2>勞保人數提供區間</h2>
+              <h2>勞保收據區間</h2>
               <p>選擇申請月份，自動帶出需提供的 6 個月份，並正確處理跨年度。</p>
             </div>
           </div>
@@ -304,7 +304,7 @@
           <div class="result-card result-card-table" id="insuranceResult" aria-live="polite">
             <div class="result-top">
               <div>
-                <div class="result-label">勞保人數提供月份</div>
+                <div class="result-label">勞保收據月份</div>
                 <div class="result-main result-main-compact" id="insuranceMain"></div>
                 <div class="result-sub" id="insuranceSub"></div>
               </div>
@@ -324,7 +324,7 @@
     <footer class="site-footer">
       <span>天數計算系統</span>
       <span class="footer-dot" aria-hidden="true"></span>
-      <span>正式版 V1.9</span>
+      <span>正式版 V1.10</span>
       <span class="footer-dot" aria-hidden="true"></span>
       <span>更新日期 2026/08/20</span>
     </footer>

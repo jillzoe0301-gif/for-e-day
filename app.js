@@ -1054,13 +1054,13 @@
       });
       container.appendChild(list);
 
-      const summary = `申請月份 ${formatYearMonth(applicationMonth)}，勞保人數提供區間為 ${formatYearMonth(start)}～${formatYearMonth(end)}（共6個月份）`;
+      const summary = `申請月份 ${formatYearMonth(applicationMonth)}，勞保收據區間為 ${formatYearMonth(start)}～${formatYearMonth(end)}（共6個月份）`;
       $('#insuranceMain').textContent = `${formatYearMonth(start)} ～ ${formatYearMonth(end)}`;
       $('#insuranceSub').textContent = `${formatROCYearMonth(start)} ～ ${formatROCYearMonth(end)}`;
       $('#insuranceMeta').textContent = `申請月份：${formatYearMonth(applicationMonth)}｜往前第 8 個月至第 3 個月｜共 6 個月份`;
       copyValues.insurance = `${summary}\n提供月份：${months.map(formatYearMonth).join('、')}`;
       showResult('#insuranceResult');
-      saveHistory('勞保人數區間', summary);
+      saveHistory('勞保收據區間', summary);
     } catch (error) {
       hideResult('#insuranceResult');
       showError('#insuranceError', error.message || '無法完成計算');
