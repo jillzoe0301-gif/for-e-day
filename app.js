@@ -7,6 +7,7 @@
   const LABOR_MEETING_EXPORT_NOTE = '定期規律召開勞資會議：召開勞資會議應具備「規律性」與「時間可預期性」，事業單位可自行訂定「每3個月（或低於3個月）」為固定週期；週期一經確立，即必須在該特定週期內至少召開1次以上之會議。';
   let meetingDateDrafts = loadMeetingDateDrafts();
   let activeLaborMeetingState = null;
+  let isAutoFillingLaborTerms = false;
 
   const $ = (selector) => document.querySelector(selector);
   const $$ = (selector) => Array.from(document.querySelectorAll(selector));
@@ -656,6 +657,83 @@
     copyValues.laborMeeting = lines.join('\n');
   }
 
+  function setLaborAutoDate(selector, date) {
+    const input = $(selector);
+    if (!input || input.dataset.manual === '1') return;
+    isAutoFillingLaborTerms = true;
+    input.value = date ? D.toISODate(date) : '';
+    input.dataset.manual = '0';
+    isAutoFillingLaborTerms = false;
+  }
+
+  function laborTermVisibility(termNo, currentEnd) {
+    const isFirstTerm = termNo <= 1;
+    if (isFirstTerm) return { previous: false, next: false, status: '第 1 屆：僅顯示當屆資訊。' };
+
+    const today = D.parseFlexibleDate(todayISO());
+    const oneMonthLater = D.addDuration(today, 0, 1, 0);
+    const showNext = Boolean(currentEnd && currentEnd <= oneMonthLater);
+    return {
+      previous: true,
+      next: showNext,
+      status: showNext
+        ? '當屆已到期或距到期剩 1 個月內：顯示上一屆、當屆與下一屆。相鄰屆期已自動預帶，日期可手動調整。'
+        : '第 2 屆起：顯示上一屆與當屆；距當屆到期剩 1 個月內時，會再自動顯示下一屆。'
+    };
+  }
+
+  function syncLaborNeighborTerms() {
+    const termNo = Math.max(1, Number.parseInt($('#laborTermNo').value, 10) || 1);
+    const currentStart = D.parseFlexibleDate($('#laborTermStart').value);
+    const currentEnd = D.parseFlexibleDate($('#laborTermEnd').value);
+    const visibility = laborTermVisibility(termNo, currentEnd);
+    const prevCard = $('#laborPrevCard');
+    const nextCard = $('#laborNextCard');
+    const grid = $('#laborNeighborTermGrid');
+
+    if (prevCard) prevCard.hidden = !visibility.previous;
+    if (nextCard) nextCard.hidden = !visibility.next;
+    if (grid) {
+      grid.hidden = !visibility.previous && !visibility.next;
+      grid.classList.toggle('single-card', Number(visibility.previous) + Number(visibility.next) === 1);
+    }
+
+    if (visibility.previous && currentStart) {
+      setLaborAutoDate('#laborPrevStart', D.addDuration(currentStart, -4, 0, 0));
+      setLaborAutoDate('#laborPrevEnd', D.addDays(currentStart, -1));
+    }
+
+    if (visibility.next && currentEnd) {
+      const nextStart = D.addDays(currentEnd, 1);
+      setLaborAutoDate('#laborNextStart', nextStart);
+      setLaborAutoDate('#laborNextEnd', D.addDays(D.addDuration(nextStart, 4, 0, 0), -1));
+    }
+
+    const status = $('#laborAutoRuleStatus');
+    if (status) status.textContent = visibility.status;
+    return visibility;
+  }
+
+  function bindLaborNeighborAutomation() {
+    ['#laborPrevStart', '#laborPrevEnd', '#laborNextStart', '#laborNextEnd'].forEach((selector) => {
+      const input = $(selector);
+      if (!input) return;
+      input.addEventListener('input', () => {
+        if (!isAutoFillingLaborTerms) input.dataset.manual = '1';
+      });
+    });
+
+    ['#laborTermNo', '#laborTermStart', '#laborTermEnd'].forEach((selector) => {
+      const input = $(selector);
+      if (!input) return;
+      input.addEventListener('input', syncLaborNeighborTerms);
+      input.addEventListener('change', syncLaborNeighborTerms);
+      input.addEventListener('blur', syncLaborNeighborTerms);
+    });
+
+    syncLaborNeighborTerms();
+  }
+
   function setInitialDates() {
     const today = todayISO();
     ['#rangeStart', '#rangeEnd', '#addYmdStart', '#addDaysStart'].forEach((id) => { $(id).value = today; });
@@ -664,8 +742,8 @@
     $('#laborTermNo').value = '3';
     $('#laborTermStart').value = '2022-12-04';
     $('#laborTermEnd').value = '2026-12-03';
-    $('#laborPrevStart').value = '2017-08-01';
-    $('#laborPrevEnd').value = '2021-07-31';
+    $('#laborPrevStart').value = '';
+    $('#laborPrevEnd').value = '';
     $('#laborNextStart').value = '';
     $('#laborNextEnd').value = '';
     $('#laborFilingDate').value = '2026-06-06';
@@ -769,8 +847,13 @@
       const currentStart = dateValue('#laborTermStart', '當屆屆期起日');
       const currentEnd = dateValue('#laborTermEnd', '當屆屆期迄日');
       const currentTerm = createLaborTerm('current', '當屆', termNo, currentStart, currentEnd);
-      const previousTerm = optionalLaborTerm('#laborPrevStart', '#laborPrevEnd', 'previous', '上一屆', termNo > 1 ? termNo - 1 : null);
-      const nextTerm = optionalLaborTerm('#laborNextStart', '#laborNextEnd', 'next', '下一屆', termNo + 1);
+      const visibility = syncLaborNeighborTerms();
+      const previousTerm = visibility.previous
+        ? optionalLaborTerm('#laborPrevStart', '#laborPrevEnd', 'previous', '上一屆', termNo - 1)
+        : null;
+      const nextTerm = visibility.next
+        ? optionalLaborTerm('#laborNextStart', '#laborNextEnd', 'next', '下一屆', termNo + 1)
+        : null;
       const terms = [currentTerm, previousTerm, nextTerm].filter(Boolean);
       const tableContainer = $('#laborMeetingTables');
       tableContainer.textContent = '';
@@ -798,7 +881,7 @@
       const totalMeetings = terms.reduce((sum, term) => sum + term.intervals.length, 0);
       $('#laborMeetingMain').textContent = `顯示 ${terms.length} 屆｜共 ${totalMeetings} 次`;
       $('#laborMeetingSub').textContent = terms.map((term) => `${term.scopeLabel} ${meetingLabel(term)}`).join('、');
-      $('#laborMeetingMeta').textContent = '每 3 個月 1 個區間｜屆期、送件日與預計開會日期皆支援西元／民國多種格式';
+      $('#laborMeetingMeta').textContent = '第1屆僅顯示當屆｜第2屆起自動帶上一屆｜到期或剩1個月時再帶下一屆｜每個屆期日期皆可手動調整';
       activeLaborMeetingState = { terms, filing };
       refreshLaborMeetingCopy();
       showResult('#laborMeetingResult');
@@ -958,6 +1041,7 @@
   function init() {
     setInitialDates();
     bindFlexibleDateInputs();
+    bindLaborNeighborAutomation();
     bindTabs();
     bindQuickActions();
     bindReset();

@@ -644,3 +644,26 @@ button { cursor: pointer; }
     justify-content: flex-start;
   }
 }
+
+
+/* V1.8｜勞資會議屆別自動顯示 */
+.neighbor-term-grid.single-card {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.labor-auto-rule {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid #dce5f4;
+  border-radius: 11px;
+  background: #f7f9fd;
+  color: #5a6782;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+#laborPrevCard[hidden],
+#laborNextCard[hidden],
+#laborNeighborTermGrid[hidden] {
+  display: none !important;
+}
