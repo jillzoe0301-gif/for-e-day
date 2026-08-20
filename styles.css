@@ -667,3 +667,57 @@ button { cursor: pointer; }
 #laborNeighborTermGrid[hidden] {
   display: none !important;
 }
+
+
+/* V1.9｜當下近四次會議紀錄框選 */
+.recent-meeting-notice {
+  margin: 18px 0 14px;
+  padding: 12px 14px;
+  border: 2px solid rgba(23, 75, 149, .32);
+  border-radius: 13px;
+  background: #f5f8ff;
+}
+
+.recent-meeting-notice-title {
+  color: #174b95;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.recent-meeting-notice-detail {
+  margin-top: 4px;
+  color: #66738f;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.meeting-data-table tbody tr.recent-meeting-row td {
+  background: #f6f9ff !important;
+  border-top: 2px solid #9ab5e6;
+  border-bottom: 2px solid #9ab5e6;
+}
+
+.meeting-data-table tbody tr.recent-meeting-row td:first-child {
+  border-left: 2px solid #9ab5e6;
+}
+
+.meeting-data-table tbody tr.recent-meeting-row td:last-child {
+  border-right: 2px solid #9ab5e6;
+}
+
+.recent-meeting-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 7px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #174b95;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 900;
+  vertical-align: middle;
+}
+
+.labor-current-term-help {
+  margin-top: 10px;
+}

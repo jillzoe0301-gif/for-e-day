@@ -27,7 +27,7 @@
         <img class="brand-logo" src="assets/logo.png" alt="天數計算系統 Days Calculator">
       </a>
       <div class="hero-meta">
-        <div class="version-badge">正式版 V1.8</div>
+        <div class="version-badge">正式版 V1.9</div>
         <div class="today-chip" id="todayText"></div>
       </div>
     </header>
@@ -43,7 +43,7 @@
           <button class="tab-button active" type="button" data-tab="range">日期區間計算</button>
           <button class="tab-button" type="button" data-tab="add">起日推算迄日</button>
           <button class="tab-button" type="button" data-tab="convert">天數換算</button>
-          <button class="tab-button" type="button" data-tab="labor-meeting">勞資會議區間</button>
+          <button class="tab-button" type="button" data-tab="labor-meeting">勞資會議紀錄區間</button>
           <button class="tab-button" type="button" data-tab="insurance">勞保人數區間</button>
         </nav>
 
@@ -189,8 +189,8 @@
         <section class="tab-content" id="tab-labor-meeting">
           <div class="section-head">
             <div>
-              <h2>勞資會議記錄區間</h2>
-              <p>輸入當屆屆別與屆期後，系統會依屆別及到期狀況自動顯示上一屆／下一屆；所有屆期起迄日都可手動調整。</p>
+              <h2>勞資會議紀錄區間</h2>
+              <p>輸入屆期起日後自動帶出 4 年減 1 天的屆期迄日；所有日期可用西元或民國多種格式輸入，離開欄位後統一顯示 YYYY-MM-DD。</p>
             </div>
           </div>
           <form id="laborMeetingForm" novalidate>
@@ -213,7 +213,10 @@
                   <div class="input-wrap"><input id="laborTermEnd" class="flex-date-input" type="text" inputmode="text" autocomplete="off" spellcheck="false" placeholder="例：20260101 或 115/01/01" required></div>
                 </div>
               </div>
+              <div class="field-help labor-current-term-help">輸入屆期起日後，自動帶出「4 年減 1 天」的屆期迄日，例如 2022-06-30 → 2026-06-29；迄日仍可手動修改。</div>
             </section>
+
+            <div class="labor-auto-rule" id="laborAutoRuleStatus" aria-live="polite"></div>
 
             <div class="neighbor-term-grid" id="laborNeighborTermGrid">
               <section class="term-input-card" id="laborPrevCard">
@@ -231,7 +234,7 @@
                     <div class="input-wrap"><input id="laborPrevEnd" class="flex-date-input" type="text" inputmode="text" autocomplete="off" spellcheck="false" placeholder="例：20260101 或 115/01/01"></div>
                   </div>
                 </div>
-                <div class="field-help">第 2 屆起自動帶入上一屆 4 年屆期；起日、迄日皆可再手動修改。</div>
+                <div class="field-help">上一屆起日可手動調整；修改起日後，迄日會先依 4 年減 1 天自動帶入，之後仍可再手動修改。</div>
               </section>
 
               <section class="term-input-card" id="laborNextCard">
@@ -249,18 +252,17 @@
                     <div class="input-wrap"><input id="laborNextEnd" class="flex-date-input" type="text" inputmode="text" autocomplete="off" spellcheck="false" placeholder="例：20260101 或 115/01/01"></div>
                   </div>
                 </div>
-                <div class="field-help">當屆已到期或距到期剩 1 個月內時自動帶入下一屆 4 年屆期；日期仍可手動修改。</div>
+                <div class="field-help">下一屆起日可手動調整；修改起日後，迄日會先依 4 年減 1 天自動帶入，之後仍可再手動修改。</div>
               </section>
             </div>
-            <div class="labor-auto-rule" id="laborAutoRuleStatus" aria-live="polite"></div>
 
             <div class="field meeting-filing-field">
               <label for="laborFilingDate">預計送件日</label>
               <div class="input-wrap"><input id="laborFilingDate" class="flex-date-input" type="text" inputmode="text" autocomplete="off" spellcheck="false" placeholder="例：20260101 或 115/01/01"></div>
-              <div class="field-help">填寫後，會列出「送件日前 1 年起至送件日前 1 日」的 4 個勞資會議區間；每個區間皆可填預計開會日期，自動帶出星期並確認是否符合區間。</div>
+              <div class="field-help">填寫後，會列出「送件日前 1 年起至送件日前 1 日」的 4 個勞資會議紀錄區間；每個區間皆可填預計開會日期，自動帶出星期並確認是否符合區間。</div>
             </div>
             <div class="form-actions">
-              <button class="primary-button" type="submit">計算會議區間</button>
+              <button class="primary-button" type="submit">產生會議紀錄區間</button>
               <button class="secondary-button" type="button" data-reset="laborMeeting">清除結果</button>
             </div>
             <div class="error-message" id="laborMeetingError" role="alert"></div>
@@ -268,7 +270,7 @@
           <div class="result-card result-card-table" id="laborMeetingResult" aria-live="polite">
             <div class="result-top">
               <div>
-                <div class="result-label">勞資會議記錄區間</div>
+                <div class="result-label">勞資會議紀錄區間</div>
                 <div class="result-main result-main-compact" id="laborMeetingMain"></div>
                 <div class="result-sub" id="laborMeetingSub"></div>
               </div>
@@ -277,7 +279,7 @@
             <div class="result-meta" id="laborMeetingMeta"></div>
             <div id="laborMeetingTables"></div>
           </div>
-          <div class="footnote">顯示規則：第 1 屆僅顯示當屆；第 2 屆起顯示當屆＋上一屆；當屆已到期或距到期剩 1 個月內，再加顯下一屆。自動帶入的相鄰屆期起迄日皆可手動修改。所有日期欄位皆支援西元／民國多種格式。</div>
+          <div class="footnote">所有日期欄位皆支援 20260101、2026/01/01、2026-01-01、2026.01.01、1150101、115/01/01、115-01-01、115.01.01，輸入完成後會統一顯示為 2026-01-01。預計開會日期會自動顯示星期，並以綠色或紅色確認是否符合區間；每一屆也可另行下載不含預計開會日期的區間圖檔。</div>
         </section>
 
         <section class="tab-content" id="tab-insurance">
@@ -322,9 +324,9 @@
     <footer class="site-footer">
       <span>天數計算系統</span>
       <span class="footer-dot" aria-hidden="true"></span>
-      <span>正式版 V1.8</span>
+      <span>正式版 V1.9</span>
       <span class="footer-dot" aria-hidden="true"></span>
-      <span>更新日期 2026/07/13</span>
+      <span>更新日期 2026/08/20</span>
     </footer>
   </main>
 

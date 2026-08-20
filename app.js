@@ -34,10 +34,12 @@
   }
 
   function dateValue(id, label) {
-    const raw = $(id).value.trim();
+    const input = $(id);
+    const raw = input.value.trim();
     if (!raw) throw new Error(`請輸入${label}`);
     const date = D.parseFlexibleDate(raw);
     if (!date) throw new Error(`${label}日期格式不正確，可輸入 20260101、2026/01/01 或 115/01/01`);
+    input.value = D.toISODate(date);
     return date;
   }
 
@@ -412,10 +414,59 @@
     link.href = canvas.toDataURL('image/png');
     link.download = makeMeetingTermFilename(term);
     link.click();
-    showToast('已下載勞資會議圖檔');
+    toast('已下載勞資會議圖檔');
   }
 
-  function createMeetingTermTable(term) {
+  function recentMeetingRowKey(term, index) {
+    return `${term.key}::${index}`;
+  }
+
+  function getRecentMeetingRowKeys(terms) {
+    const today = D.parseFlexibleDate(todayISO());
+    const candidates = [];
+    terms.forEach((term) => {
+      term.intervals.forEach((interval, index) => {
+        if (interval.start <= today) {
+          candidates.push({
+            key: recentMeetingRowKey(term, index),
+            start: interval.start,
+            end: interval.end,
+            term,
+            index
+          });
+        }
+      });
+    });
+    candidates.sort((a, b) => a.start - b.start);
+    return new Set(candidates.slice(-4).map((item) => item.key));
+  }
+
+  function createRecentMeetingNotice(terms, recentKeys) {
+    const selected = [];
+    terms.forEach((term) => {
+      term.intervals.forEach((interval, index) => {
+        if (recentKeys.has(recentMeetingRowKey(term, index))) {
+          selected.push({ term, interval, index });
+        }
+      });
+    });
+    selected.sort((a, b) => a.interval.start - b.interval.start);
+
+    const notice = document.createElement('div');
+    notice.className = 'recent-meeting-notice';
+    const title = document.createElement('div');
+    title.className = 'recent-meeting-notice-title';
+    title.textContent = '當下近四次會議紀錄區間';
+    const detail = document.createElement('div');
+    detail.className = 'recent-meeting-notice-detail';
+    detail.textContent = selected.length
+      ? `以今天 ${D.toISODate(D.parseFlexibleDate(todayISO()))} 為基準，已直接框選最近 ${selected.length} 次可填寫的會議紀錄區間。`
+      : '目前屆期尚未產生可供填寫的會議紀錄區間。';
+    notice.append(title, detail);
+    return notice;
+  }
+
+  function createMeetingTermTable(term, recentKeys) {
     const section = document.createElement('section');
     section.className = `result-table-section meeting-term-section ${term.scope}`;
 
@@ -457,9 +508,20 @@
     const tbody = document.createElement('tbody');
     term.intervals.forEach((interval, index) => {
       const row = document.createElement('tr');
+      const isRecentMeeting = recentKeys && recentKeys.has(recentMeetingRowKey(term, index));
+      if (isRecentMeeting) row.classList.add('recent-meeting-row');
+
       const countCell = document.createElement('td');
       countCell.className = 'meeting-count-cell';
-      countCell.textContent = `第${index + 1}次`;
+      const countText = document.createElement('span');
+      countText.textContent = `第${index + 1}次`;
+      countCell.appendChild(countText);
+      if (isRecentMeeting) {
+        const recentBadge = document.createElement('span');
+        recentBadge.className = 'recent-meeting-badge';
+        recentBadge.textContent = '近四次';
+        countCell.appendChild(recentBadge);
+      }
 
       const dateCell = document.createElement('td');
       const input = createMeetingDateInput(
@@ -490,6 +552,13 @@
       };
       input.addEventListener('input', onDateChange);
       input.addEventListener('change', onDateChange);
+      input.addEventListener('blur', () => {
+        const parsed = D.parseFlexibleDate(input.value);
+        if (parsed) input.value = D.toISODate(parsed);
+        setMeetingDateDraft(term.key, index, input.value.trim());
+        updateMeetingDateRow(input, weekdayCell, status, row, interval);
+        refreshLaborMeetingCopy();
+      });
       tbody.appendChild(row);
     });
 
@@ -568,6 +637,13 @@
       };
       input.addEventListener('input', onDateChange);
       input.addEventListener('change', onDateChange);
+      input.addEventListener('blur', () => {
+        const parsed = D.parseFlexibleDate(input.value);
+        if (parsed) input.value = D.toISODate(parsed);
+        setMeetingDateDraft(filing.key, index, input.value.trim());
+        updateMeetingDateRow(input, weekdayCell, status, row, interval);
+        refreshLaborMeetingCopy();
+      });
       tbody.appendChild(row);
     });
 
@@ -598,6 +674,8 @@
     const start = D.parseFlexibleDate(startRaw);
     const end = D.parseFlexibleDate(endRaw);
     if (!start || !end) throw new Error(`${scopeLabel}日期格式不正確`);
+    $(startSelector).value = D.toISODate(start);
+    $(endSelector).value = D.toISODate(end);
     return createLaborTerm(scope, scopeLabel, termNo, start, end);
   }
 
@@ -657,6 +735,32 @@
     copyValues.laborMeeting = lines.join('\n');
   }
 
+  function fourYearTermEnd(startDate) {
+    return D.addDays(D.addDuration(startDate, 4, 0, 0), -1);
+  }
+
+  function normalizeDateInputValue(input) {
+    if (!input) return null;
+    const raw = input.value.trim();
+    if (!raw) return null;
+    const parsed = D.parseFlexibleDate(raw);
+    if (!parsed) return null;
+    input.value = D.toISODate(parsed);
+    return parsed;
+  }
+
+  function fillTermEndFromStart(startSelector, endSelector) {
+    const startInput = $(startSelector);
+    const endInput = $(endSelector);
+    if (!startInput || !endInput) return;
+    const start = normalizeDateInputValue(startInput);
+    if (!start) return;
+    isAutoFillingLaborTerms = true;
+    endInput.value = D.toISODate(fourYearTermEnd(start));
+    endInput.dataset.manual = '0';
+    isAutoFillingLaborTerms = false;
+  }
+
   function setLaborAutoDate(selector, date) {
     const input = $(selector);
     if (!input || input.dataset.manual === '1') return;
@@ -699,14 +803,21 @@
     }
 
     if (visibility.previous && currentStart) {
-      setLaborAutoDate('#laborPrevStart', D.addDuration(currentStart, -4, 0, 0));
-      setLaborAutoDate('#laborPrevEnd', D.addDays(currentStart, -1));
+      const previousStart = D.addDuration(currentStart, -4, 0, 0);
+      const prevStartInput = $('#laborPrevStart');
+      if (prevStartInput?.dataset.manual !== '1') {
+        setLaborAutoDate('#laborPrevStart', previousStart);
+        setLaborAutoDate('#laborPrevEnd', fourYearTermEnd(previousStart));
+      }
     }
 
     if (visibility.next && currentEnd) {
       const nextStart = D.addDays(currentEnd, 1);
-      setLaborAutoDate('#laborNextStart', nextStart);
-      setLaborAutoDate('#laborNextEnd', D.addDays(D.addDuration(nextStart, 4, 0, 0), -1));
+      const nextStartInput = $('#laborNextStart');
+      if (nextStartInput?.dataset.manual !== '1') {
+        setLaborAutoDate('#laborNextStart', nextStart);
+        setLaborAutoDate('#laborNextEnd', fourYearTermEnd(nextStart));
+      }
     }
 
     const status = $('#laborAutoRuleStatus');
@@ -715,6 +826,22 @@
   }
 
   function bindLaborNeighborAutomation() {
+    const termPairs = [
+      ['#laborTermStart', '#laborTermEnd'],
+      ['#laborPrevStart', '#laborPrevEnd'],
+      ['#laborNextStart', '#laborNextEnd']
+    ];
+    termPairs.forEach(([startSelector, endSelector]) => {
+      const startInput = $(startSelector);
+      if (!startInput) return;
+      const syncEnd = () => {
+        if (!startInput.value.trim()) return;
+        fillTermEndFromStart(startSelector, endSelector);
+        if (startSelector === '#laborTermStart') syncLaborNeighborTerms();
+      };
+      startInput.addEventListener('change', syncEnd);
+      startInput.addEventListener('blur', syncEnd);
+    });
     ['#laborPrevStart', '#laborPrevEnd', '#laborNextStart', '#laborNextEnd'].forEach((selector) => {
       const input = $(selector);
       if (!input) return;
@@ -740,8 +867,8 @@
     $('#todayText').textContent = currentTimeText();
 
     $('#laborTermNo').value = '3';
-    $('#laborTermStart').value = '2022-12-04';
-    $('#laborTermEnd').value = '2026-12-03';
+    $('#laborTermStart').value = '2022-06-30';
+    $('#laborTermEnd').value = '2026-06-29';
     $('#laborPrevStart').value = '';
     $('#laborPrevEnd').value = '';
     $('#laborNextStart').value = '';
@@ -855,15 +982,18 @@
         ? optionalLaborTerm('#laborNextStart', '#laborNextEnd', 'next', '下一屆', termNo + 1)
         : null;
       const terms = [currentTerm, previousTerm, nextTerm].filter(Boolean);
+      const recentMeetingKeys = getRecentMeetingRowKeys(terms);
       const tableContainer = $('#laborMeetingTables');
       tableContainer.textContent = '';
-      terms.forEach((term) => tableContainer.appendChild(createMeetingTermTable(term)));
+      tableContainer.appendChild(createRecentMeetingNotice(terms, recentMeetingKeys));
+      terms.forEach((term) => tableContainer.appendChild(createMeetingTermTable(term, recentMeetingKeys)));
 
       let filing = null;
       const filingRaw = $('#laborFilingDate').value;
       if (filingRaw) {
         const filingDate = D.parseFlexibleDate(filingRaw);
         if (!filingDate) throw new Error('預計送件日格式不正確');
+        $('#laborFilingDate').value = D.toISODate(filingDate);
         const filingStart = D.addDuration(filingDate, -1, 0, 0);
         const filingEnd = D.addDays(filingDate, -1);
         const filingIntervals = D.generateMonthIntervals(filingStart, filingEnd, 3);
@@ -881,12 +1011,12 @@
       const totalMeetings = terms.reduce((sum, term) => sum + term.intervals.length, 0);
       $('#laborMeetingMain').textContent = `顯示 ${terms.length} 屆｜共 ${totalMeetings} 次`;
       $('#laborMeetingSub').textContent = terms.map((term) => `${term.scopeLabel} ${meetingLabel(term)}`).join('、');
-      $('#laborMeetingMeta').textContent = '第1屆僅顯示當屆｜第2屆起自動帶上一屆｜到期或剩1個月時再帶下一屆｜每個屆期日期皆可手動調整';
+      $('#laborMeetingMeta').textContent = '屆期起日自動帶 4 年減 1 天迄日｜日期輸入後統一顯示 YYYY-MM-DD｜已框選以今天為基準的近四次會議紀錄｜屆期日期仍可手動調整';
       activeLaborMeetingState = { terms, filing };
       refreshLaborMeetingCopy();
       showResult('#laborMeetingResult');
       const filingSummary = filing ? `；送件日前一年 ${D.formatDate(filing.start)}～${D.formatDate(filing.end)}` : '';
-      saveHistory('勞資會議區間', `${terms.map((term) => `${term.scopeLabel}${meetingLabel(term)}`).join('、')}，共${totalMeetings}次${filingSummary}`);
+      saveHistory('勞資會議紀錄區間', `${terms.map((term) => `${term.scopeLabel}${meetingLabel(term)}`).join('、')}，共${totalMeetings}次${filingSummary}`);
     } catch (error) {
       activeLaborMeetingState = null;
       hideResult('#laborMeetingResult');
@@ -948,9 +1078,12 @@
           return;
         }
         const date = D.parseFlexibleDate(raw);
-        input.title = date
-          ? `辨識日期：${D.formatDate(date)}（${D.formatROCDate(date)}）`
-          : `日期格式不正確。${formatHint}`;
+        if (date) {
+          input.value = D.toISODate(date);
+          input.title = `辨識日期：${D.formatDate(date)}（${D.formatROCDate(date)}）`;
+        } else {
+          input.title = `日期格式不正確。${formatHint}`;
+        }
       });
     });
   }
